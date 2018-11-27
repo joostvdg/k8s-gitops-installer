@@ -10,3 +10,15 @@
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
+.idea
+cat
+cert-manager-cluster-issuer.yml
+cjoc-cert.yml
+cloudbees-core_*_kubernetes.tgz
+cloudbees-core_*_kubernetes.tgz.sha
+cloudbees-core_*_kubernetes/
+cloudbees-core_*_kubernetes.tgz
+cloudbees-core_*_kubernetes.tgz.sha
+cloudbees-core_*_kubernetes/
+sc-ssd.yml
+weave-passwd
