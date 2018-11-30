@@ -31,4 +31,6 @@ go run main.go install helm
 go run main.go install nginx
 go run main.go gke sc-ssd
 go run main.go install letsencrypt -e jvandergriendt@cloudbees.com --production
+go run main.go gke ing-ip
+go run main.go cbc install --verbose --domainName cloudbees-core.kearos.net --production
 ```

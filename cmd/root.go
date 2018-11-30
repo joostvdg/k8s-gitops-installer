@@ -15,6 +15,7 @@ import (
     "github.com/joostvdg/k8s-gitops-installer/pkg/distributions/gke"
     "github.com/joostvdg/k8s-gitops-installer/pkg/cloudbees/core"
 	"github.com/go-ozzo/ozzo-validation"
+    "time"
 )
 
 var Name string
@@ -52,9 +53,11 @@ func init() {
     cbcInstallCmd.Flags().StringVarP(&Version, "version", "v", "2.138.3.1", "The version for CloudBees Core, or use 2.138.3.1 by leaving empty")
     cbcInstallCmd.Flags().StringVarP(&Platform, "platform", "p", "kubernetes", "Platform for CloudBees Core [*kubernetes, openshift] (* default)")
     cbcInstallCmd.Flags().StringVarP(&DomainName, "domainName", "d", "cje.example.com", "The domain name to use")
+    cbcInstallCmd.Flags().StringVarP(&Namespace, "namespace", "s", "default", "The namespace where the cloudbees core should be installed")
     cbcInstallCmd.Flags().BoolVar(&Verbose, "verbose", false, "Set this if you want more logging")
     cbcInstallCmd.Flags().BoolVar(&Production, "production", false, "For using Let's Encrypt Production certificates")
     cbcCmd.AddCommand(cbcInstallCmd)
+    cbcCmd.AddCommand(cbcPasswordCmd)
 
     rootCmd.AddCommand(validateCmd)
     rootCmd.AddCommand(versionCmd)
@@ -138,6 +141,15 @@ var cbcCmd = &cobra.Command{
     Run: func(cmd *cobra.Command, args []string) {},
 }
 
+var cbcPasswordCmd = &cobra.Command{
+    Use:   "pass",
+    Short: "Prints initial cjoc administrator password",
+    Long:  `Prints initial cjoc administrator password, doesn't work if there are other users already'`,
+    Run: func(cmd *cobra.Command, args []string) {
+        core.GetCjocPassword()
+    },
+}
+
 var cbcInstallCmd = &cobra.Command{
     Use:   "install",
     Short: "Will install CloudBees Core",
@@ -152,6 +164,7 @@ var cbcInstallCmd = &cobra.Command{
             SSL: true,
             Domain: DomainName,
             Production: Production,
+            Namespace: Namespace,
         }
 
         // download
@@ -161,6 +174,12 @@ var cbcInstallCmd = &cobra.Command{
         core.PreInstallConfigure(config)
 
         // install
+        core.Install(config)
+
+        // wait for startup and get print password
+        log.Info("Wait 3 minutes for Operations Center to startup")
+        time.Sleep(3 * time.Minute)
+        core.GetCjocPassword()
     },
 }
 

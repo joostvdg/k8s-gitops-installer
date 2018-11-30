@@ -7,11 +7,23 @@ import (
     "io/ioutil"
     "os/exec"
     "strings"
-    "time"
 )
 
 func Install(config CoreModernConfig) error {
+    folderName := fmt.Sprintf("./cloudbees-core_%s_%s", config.Version, config.Platform)
+    coreYaml := fmt.Sprintf("%s/cloudbees-core.yml", folderName)
+    log.Info("Install CloudBees Core")
+    // install cb core
+    installCBCoreCmd := exec.Command("kubectl",
+        "apply", "-f", coreYaml,
+    )
+    util.RunCmd(installCBCoreCmd, true)
 
+    log.Info("Wait for Rollout to succeed")
+    watchCBCoreRolloutCmd := exec.Command("kubectl",
+        "rollout", "status", "sts", "cjoc",
+    )
+    util.RunCmd(watchCBCoreRolloutCmd, false)
     return nil
 }
 
@@ -109,28 +121,6 @@ func PreInstallConfigure(config CoreModernConfig) {
         "-i", "''", "-e", storageClassCjocSed, coreYaml,
     )
     util.RunCmd(storageClassCjocCmd, true)
-
-
-    log.Info("Install CloudBees Core")
-    // install cb core
-    installCBCoreCmd := exec.Command("kubectl",
-        "apply", "-f", coreYaml,
-    )
-    util.RunCmd(installCBCoreCmd, true)
-
-    log.Info("Wait for Rollout to succeed")
-    watchCBCoreRolloutCmd := exec.Command("kubectl",
-        "rollout", "status", "sts", "cjoc",
-    )
-    util.RunCmd(watchCBCoreRolloutCmd, false)
-
-    log.Info("Wait 3 minutes for Operations Center to startup")
-    time.Sleep(3 * time.Minute)
-    printCBCorePasswordCmd := exec.Command("kubectl",
-        "exec", "cjoc-0", "--", "cat", "/var/jenkins_home/secrets/initialAdminPassword",
-    )
-    log.Info("Retrieve Operations Center password")
-    util.RunCmd(printCBCorePasswordCmd, false)
 }
 
 func InstallCertificate(config CoreModernConfig) {
@@ -146,7 +136,7 @@ func InstallCertificate(config CoreModernConfig) {
     log.Info("Install Certificate resource for Operations Center")
 
     resourceNamespace = config.Namespace
-    domain = config.Namespace
+    domain = config.Domain
     resourceName = strings.Replace(config.Domain, ".", "-", -1)
     secretName = resourceName+"-tls"
     if config.Production {
