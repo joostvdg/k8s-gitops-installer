@@ -50,13 +50,18 @@ func init() {
     gkeCmd.AddCommand(gkeGetIngressIpCmd)
     gkeCmd.AddCommand(gkeSsdStorageClassCmd)
 
-    cbcInstallCmd.Flags().StringVarP(&Version, "version", "v", "2.138.3.1", "The version for CloudBees Core, or use 2.138.3.1 by leaving empty")
+    cbcDownloadCmd.Flags().StringVarP(&Version, "version", "v", "2.138.3.1", "The version for CloudBees Core, or use 2.138.3.1 by leaving empty")
+    cbcDownloadCmd.Flags().StringVarP(&Platform, "platform", "p", "kubernetes", "Platform for CloudBees Core [*kubernetes, openshift] (* default)")
+    cbcDownloadCmd.Flags().BoolVar(&Verbose, "verbose", false, "Set this if you want more logging")
+
+    cbcInstallCmd.Flags().StringVarP(&Version, "version", "v", "2.138.4.3", "The version for CloudBees Core, or use 2.138.4.3 by leaving empty")
     cbcInstallCmd.Flags().StringVarP(&Platform, "platform", "p", "kubernetes", "Platform for CloudBees Core [*kubernetes, openshift] (* default)")
     cbcInstallCmd.Flags().StringVarP(&DomainName, "domainName", "d", "cje.example.com", "The domain name to use")
     cbcInstallCmd.Flags().StringVarP(&Namespace, "namespace", "s", "default", "The namespace where the cloudbees core should be installed")
     cbcInstallCmd.Flags().BoolVar(&Verbose, "verbose", false, "Set this if you want more logging")
     cbcInstallCmd.Flags().BoolVar(&Production, "production", false, "For using Let's Encrypt Production certificates")
     cbcCmd.AddCommand(cbcInstallCmd)
+    cbcCmd.AddCommand(cbcDownloadCmd)
     cbcCmd.AddCommand(cbcPasswordCmd)
 
     rootCmd.AddCommand(validateCmd)
@@ -105,7 +110,7 @@ var gkeSsdStorageClassCmd = &cobra.Command{
     Short: "Will create gke ssd storage class",
     Long:  `Will create the GKE SSD based Storage Class`,
     Run: func(cmd *cobra.Command, args []string) {
-        gke.GetNginxIngressIp(Name, Namespace)
+        gke.InstallSsdSC()
     },
 }
 
@@ -150,6 +155,20 @@ var cbcPasswordCmd = &cobra.Command{
     },
 }
 
+var cbcDownloadCmd = &cobra.Command{
+    Use:   "download",
+    Short: "Downloads selected version of CB Core",
+    Long:  `Downloads selected version of CB Core and then extracts it`,
+    Run: func(cmd *cobra.Command, args []string) {
+        config := core.CoreModernConfig{
+            Platform: Platform,
+            Version:  Version,
+            Verbose:  Verbose,
+        }
+        core.DownloadAndUnpack(config)
+    },
+}
+
 var cbcInstallCmd = &cobra.Command{
     Use:   "install",
     Short: "Will install CloudBees Core",
@@ -166,6 +185,8 @@ var cbcInstallCmd = &cobra.Command{
             Production: Production,
             Namespace: Namespace,
         }
+
+        // TODO: add cluster validation
 
         // download
         core.DownloadAndUnpack(config)

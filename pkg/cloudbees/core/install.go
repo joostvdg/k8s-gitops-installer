@@ -49,8 +49,8 @@ func PreInstallConfigure(config CoreModernConfig) {
         replacementString := fmt.Sprintf("s/cje.example.com/%s/g", config.Domain)
         alterTlsSecretReplacementString := fmt.Sprintf("s/#  secretName: %s-tls/  secretName: %s-tls/g", config.Domain, config.Domain)
         alterHostReplacementString := fmt.Sprintf("s/#  - %s/  - %s/g", config.Domain, config.Domain)
-        addCertManager1ReplacementString := fmt.Sprintf("s/# Uncomment the next line if NGINX Ingress Controller is configured to do SSL offloading at load balancer level/certmanager.k8s.io\\/issuer-kind: ClusterIssuer/g")
-        addCertManager2ReplacementString := fmt.Sprintf("s/# \"413 Request Entity Too Large\" uploading plugins, increase client_max_body_size/certmanager.k8s.io\\/issuer-name: letsencrypt-prod/g")
+        addCertManager1ReplacementString := fmt.Sprintf("s/# Uncomment the next line if NGINX Ingress Controller is configured to do SSL offloading at load balancer level/certmanager.k8s.io\\/cluster-issuer: letsencrypt-prod/g")
+        addCertManager2ReplacementString := fmt.Sprintf("s/# \"413 Request Entity Too Large\" uploading plugins, increase client_max_body_size/certmanager.k8s.io\\/acme-challenge-type: http01/g")
 
         if config.Verbose {
             log.Infof("Updating file %s\n", coreYaml)
