@@ -14,8 +14,8 @@ import (
 func InstallWithCertmanager(email string, prod bool) {
     log.Infof("Installing cert-manager and ClusterIssuer for Let's Encrypt (email: %s)\n", email )
     clusterIssuerFilename := "cert-manager-cluster-issuer.yml"
-    helmInstallCmd := exec.Command("helm",
-       "upgrade", "cert-manager", "--install", "--namespace", "default", "stable/cert-manager",
+    helmUpgradeCmd := exec.Command("helm",
+       "upgrade", "cert-manager", "--install", "--version", "v0.5.1", "--namespace", "default", "stable/cert-manager",
     )
     helmExistsCmd := exec.Command("helm","ls")
     applyClusterIssuerResourceCmd := exec.Command("kubectl",
@@ -28,7 +28,7 @@ func InstallWithCertmanager(email string, prod bool) {
     }
 
     log.Info("Installing cert-manager via Helm (Upgrade --install)")
-    util.RunCmd(helmInstallCmd, true)
+    util.RunCmd(helmUpgradeCmd, true)
 
     var clusterIssuerYaml string
     if prod {

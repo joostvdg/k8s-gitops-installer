@@ -6,25 +6,21 @@ import (
     log "github.com/sirupsen/logrus"
 )
 
-func Create(name string) {
+func Delete(name string) {
     log.Infof("Creating namespace %s\n", name)
     namespaceExistsCmd := exec.Command("kubectl",
         "get", "namespace", name)
     createNamespaceCmd := exec.Command("kubectl",
-        "create", "namespace", name,
-    )
-    addNamespaceLabelCmd := exec.Command("kubectl",
-        "label", "namespace", name, "name="+name,
+        "delete", "namespace", name,
     )
 
     namespaceExists := util.RunCmdNonFatal(namespaceExistsCmd)
     if  namespaceExists {
-        log.Infof("Namespace %s already exists\n", name)
-    } else {
-        log.Info("Create namespace")
+        log.Info("Delete namespace")
         util.RunCmd(createNamespaceCmd, true)
+
+    } else {
+        log.Infof("Namespace %s does not exists\n", name)
     }
 
-    log.Info("Add namespace label(s)")
-    util.RunCmd(addNamespaceLabelCmd, false)
 }

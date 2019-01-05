@@ -28,7 +28,7 @@ func Install(config CoreModernConfig) error {
 }
 
 func PreInstallConfigure(config CoreModernConfig) {
-    folderName := fmt.Sprintf("./cloudbees-core_%s_%s", config.Version, config.Platform)
+    folderName := fmt.Sprintf("cloudbees-core_%s_%s", config.Version, config.Platform)
     coreYaml := fmt.Sprintf("%s/cloudbees-core.yml", folderName)
     log.Info("Configuring CloudBees Core (CBCore)")
     if config.Verbose {
@@ -40,7 +40,22 @@ func PreInstallConfigure(config CoreModernConfig) {
         log.Infof("\tStorage Class Operations Center: %s\n", config.StorageClassOC)
         log.Infof("\tStorage Class Managed Masters: %s\n", config.StorageClassMM)
     }
+    validateFileExistsCmd := exec.Command("ls",
+        "-lath", coreYaml,
+    )
+    fileOutput := util.RunCmd(validateFileExistsCmd, false)
+    if strings.Contains(fileOutput, "No such file or directory") {
+        log.Fatal("Could not find configuration yaml!")
+    }
 
+    // ALPINE: sed -i  -e s/test me/test you/g test/a.txt
+    // DARWIN: sed -i '' "s/test you/test it/g" build/a.txt
+    checkDistributionCmd := exec.Command("uname")
+    uname := util.RunCmd(checkDistributionCmd, false)
+    darwinHack := "''"
+    if uname != "Darwin" {
+        darwinHack = "-e"
+    }
     // ssl config
     //  - nginx config
     //  - cert-manager annotation
@@ -52,41 +67,49 @@ func PreInstallConfigure(config CoreModernConfig) {
         addCertManager1ReplacementString := fmt.Sprintf("s/# Uncomment the next line if NGINX Ingress Controller is configured to do SSL offloading at load balancer level/certmanager.k8s.io\\/cluster-issuer: letsencrypt-prod/g")
         addCertManager2ReplacementString := fmt.Sprintf("s/# \"413 Request Entity Too Large\" uploading plugins, increase client_max_body_size/certmanager.k8s.io\\/acme-challenge-type: http01/g")
 
+        alterDomainNameCmd := exec.Command("sed",
+            "-i", darwinHack, replacementString, coreYaml,
+        )
+        alterTlsCmd := exec.Command("sed",
+            "-i", darwinHack, "s/#tls:/tls:/g", coreYaml,
+        )
+        alterHostsCmd := exec.Command("sed",
+            "-i", darwinHack, "s/#- hosts:/- hosts:/g", coreYaml,
+        )
+        alterHostCmd := exec.Command("sed",
+            "-i", darwinHack, alterHostReplacementString, coreYaml,
+        )
+        alterTlsSecretCmd := exec.Command("sed",
+            "-i", darwinHack, alterTlsSecretReplacementString, coreYaml,
+        )
+        addCertManagerCmd1 := exec.Command("sed",
+            "-i", darwinHack, addCertManager1ReplacementString, coreYaml,
+        )
+        addCertManagerCmd2 := exec.Command("sed",
+            "-i", darwinHack, addCertManager2ReplacementString, coreYaml,
+        )
+
         if config.Verbose {
             log.Infof("Updating file %s\n", coreYaml)
             log.Infof("\tDomain Replacement Command\t=%s\n", replacementString)
             log.Infof("\tAlter TLS Secret Command\t=%s\n", alterTlsSecretReplacementString)
             log.Infof("\tAlter Host Command\t\t=%s\n", alterHostReplacementString)
         }
-        alterDomainNameCmd := exec.Command("sed",
-            "-i", "''", "-e", replacementString, coreYaml,
-        )
-        alterTlsCmd := exec.Command("sed",
-            "-i", "''", "-e", "s/#tls:/tls:/g", coreYaml,
-        )
-        alterHostsCmd := exec.Command("sed",
-            "-i", "''", "-e", "s/#- hosts:/- hosts:/g", coreYaml,
-        )
-        alterHostCmd := exec.Command("sed",
-            "-i", "''", "-e", alterHostReplacementString, coreYaml,
-        )
-        alterTlsSecretCmd := exec.Command("sed",
-            "-i", "''", "-e", alterTlsSecretReplacementString, coreYaml,
-        )
-        addCertManagerCmd1 := exec.Command("sed",
-            "-i", "''", "-e", addCertManager1ReplacementString, coreYaml,
-        )
-        addCertManagerCmd2 := exec.Command("sed",
-            "-i", "''", "-e", addCertManager2ReplacementString, coreYaml,
-        )
 
         log.Info("Changing Kubernetes Resource file for SSL configuration")
+        if config.Verbose {  log.Info(" - domain name")}
         util.RunCmd(alterDomainNameCmd, true)
+        if config.Verbose {  log.Info(" - tls")}
         util.RunCmd(alterTlsCmd, true)
+        if config.Verbose {  log.Info(" - hosts")}
         util.RunCmd(alterHostsCmd, true)
+        if config.Verbose {  log.Info(" - host")}
         util.RunCmd(alterHostCmd, true)
+        if config.Verbose {  log.Info(" - tls secret")}
         util.RunCmd(alterTlsSecretCmd, true)
+        if config.Verbose {  log.Info(" - certman 1")}
         util.RunCmd(addCertManagerCmd1, true)
+        if config.Verbose {  log.Info(" - certman 2")}
         util.RunCmd(addCertManagerCmd2, true)
 
         // create cert
@@ -110,7 +133,7 @@ func PreInstallConfigure(config CoreModernConfig) {
             %s=%s/`
     storageClassPropertyMMSed := fmt.Sprintf(storageClassPropertyMMSedBase, storageClassPropertyMM, config.StorageClassMM)
     storageClassMMCmd := exec.Command("sed",
-        "-i", "''", "-e", storageClassPropertyMMSed, coreYaml,
+        "-i", darwinHack, storageClassPropertyMMSed, coreYaml,
     )
     util.RunCmd(storageClassMMCmd, true)
 
@@ -118,7 +141,7 @@ func PreInstallConfigure(config CoreModernConfig) {
     storageClassCjocDefDesired := fmt.Sprintf("storageClassName: %s", config.StorageClassOC)
     storageClassCjocSed := fmt.Sprintf("s/%s/%s/g", storageClassCjocDefOriginial, storageClassCjocDefDesired)
     storageClassCjocCmd := exec.Command("sed",
-        "-i", "''", "-e", storageClassCjocSed, coreYaml,
+        "-i", darwinHack, storageClassCjocSed, coreYaml,
     )
     util.RunCmd(storageClassCjocCmd, true)
 }

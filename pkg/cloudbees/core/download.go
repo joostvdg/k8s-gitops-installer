@@ -14,7 +14,6 @@ import (
 // https://downloads.cloudbees.com/cloudbees-core/cloud/2.138.2.2/cloudbees-core_2.138.2.2_kubernetes.tgz
 var (
     Filename = `cloudbees-core_%s_%s.tgz`
-    ShaFilename = Filename+".sha256"
     DownloadURLProto = `https://downloads.cloudbees.com/cloudbees-core/cloud/%s/`
 )
 
@@ -22,12 +21,25 @@ func DownloadAndUnpack(config CoreModernConfig) {
     log.Infof("Downloading CloudBees Core version %s for platform %s\n", config.Version, config.Platform)
     baseUrl := fmt.Sprintf(DownloadURLProto, config.Version)
     filename := fmt.Sprintf(Filename, config.Version, config.Platform)
-    shaFilename := filename+".sha"
+    shaFilename := filename+".sha256"
     url := baseUrl+filename
     shaUrl := baseUrl+shaFilename
-    validateDownloadCmd := exec.Command("shasum",
-        "-a", "256", filename,
-    )
+
+    checkDistributionCmd := exec.Command("uname")
+    uname := util.RunCmd(checkDistributionCmd, false)
+    var validateDownloadCmd *exec.Cmd
+    if uname == "Darwin" {
+        // Darwin = macOs
+        validateDownloadCmd = exec.Command("shasum",
+            "-a", "256", shaFilename,
+        )
+    } else {
+        // sha256sum -c $INSTALLER.sha256
+        validateDownloadCmd = exec.Command("sha256sum",
+            "-c", shaFilename,
+        )
+    }
+
     unpackDownloadCmd := exec.Command("tar",
         "xzvf", filename,
     )

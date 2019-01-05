@@ -11,7 +11,7 @@ import (
 func GetNginxIngressIp(name string, namespace string) {
     log.Infof("Get Nginx ingress ip in namespace %s\n", namespace)
     ingressIptCmd := exec.Command("kubectl",
-        "get", "svc", "-n", namespace, name, "-o", "jsonpath=\"{.status.loadBalancer.ingress[0].ip}\"",
+        "get", "svc", "-n", namespace, name, "-o", `jsonpath="{.status.loadBalancer.ingress[0].ip}"`,
     )
 
     util.RunCmd(ingressIptCmd, true)

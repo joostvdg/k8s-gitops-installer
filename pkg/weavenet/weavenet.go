@@ -10,6 +10,7 @@ import (
 )
 
 // TODO: randomly generate password
+// TODO: toggle encryption: https://itnext.io/benchmark-results-of-kubernetes-network-plugins-cni-over-10gbit-s-network-36475925a560
 
 func Install() {
     log.Info("Installing Weavenet with encryption")
