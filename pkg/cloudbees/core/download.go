@@ -2,6 +2,7 @@ package core
 
 import (
     "fmt"
+    "strings"
 
     "io"
     "net/http"
@@ -27,6 +28,10 @@ func DownloadAndUnpack(config CoreModernConfig) {
 
     checkDistributionCmd := exec.Command("uname")
     uname := util.RunCmd(checkDistributionCmd, false)
+    uname = strings.TrimSpace(uname)
+    if config.Verbose {
+        log.Infof("Found uname: [%s]", uname)
+    }
     var validateDownloadCmd *exec.Cmd
     if uname == "Darwin" {
         // Darwin = macOs
